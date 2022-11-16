@@ -21,15 +21,15 @@ module.exports = async function (config) {
     },
   });
   const sequelize = setupDatabase(config);
-  // const AgentModel = setupAgentModel(config);
+  const AgentModel = setupAgentModel(config);
   const MetricModel = setupMetricModel(config);
   /**
    * Se establecen las relaciones
    * un agente tiene muchos modelos
    * una metrica pertenece a un agente
    */
-  // AgentModel.hasMany(MetricModel);
-  // MetricModel.belongsTo(AgentModel);
+  AgentModel.hasMany(MetricModel);
+  MetricModel.belongsTo(AgentModel);
   /**
    * Valida la conexion a la base de datos
    */
