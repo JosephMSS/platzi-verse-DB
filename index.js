@@ -1,48 +1,45 @@
-"use strict";
-const defaults = require("defaults");
-const setupDatabase = require("./lib/db");
-const setupAgentModel = require("./models/agent");
-const setupMetricModel = require("./models/metric");
+const { Sequelize } = require("sequelize");
+const { setupModels } = require("./db/models");
+const {
+  config: {
+    db: { user, password, engine, host, name, port },
+  },
+} = require("./config");
+const { setupDatabase, validateConnection } = require("./libs/sequelize");
+const USER = encodeURIComponent(user);
+const PASSWORD = encodeURIComponent(password);
+const URI = `${engine}://${USER}:${PASSWORD}@${host}:${port}/${name}`;
+/**
+ * @typedef {Object} config
+ * @property {String} URI,
+ * @property {String} engine
+ * @property {Boolean} logging
+ * @property {Sequelize} Sequelize
+ */
+/**
+ * @type {config}
+ */
+const defaultConfig = {
+  URI,
+  engine,
+  logging,
+  Sequelize,
+};
 /**
  *
- * @param {} config es inyectado desde el archivo setup.js
- * @returns retorna el los servicios Agent y Metric
+ * @param {config} config Configuración de la base de datos relacional que se va a utilizar
+ * @returns {Object} retorna el servicio de agente y métrica
  */
-module.exports = async function (config) {
-  config = defaults(config, {
-    dialect: "sqlite",
-    pool: {
-      max: 10, //maximo de conexiones
-      min: 0, //minimo de conexiones
-      idle: 10000, //si no pasa nada en la conexion en 10el la va a dejar de ejecutar
-    },
-    query: {
-      raw: true, // cada una de los query me entregue unicamente el JSON y no objetos complejos
-    },
-  });
+async function setupService(config = defaultConfig) {
   const sequelize = setupDatabase(config);
-  const AgentModel = setupAgentModel(config);
-  const MetricModel = setupMetricModel(config);
-  /**
-   * Se establecen las relaciones
-   * un agente tiene muchos modelos
-   * una metrica pertenece a un agente
-   */
-  AgentModel.hasMany(MetricModel);
-  MetricModel.belongsTo(AgentModel);
-  /**
-   * Valida la conexion a la base de datos
-   */
-  await sequelize.authenticate();
-  if (config.setup) {
-    /**
-     * Si la base de datos existe que cree una nueva
-     */
-    await sequelize.sync({ force: true });
+  const { hasConnection, message } = validateConnection(sequelize);
+  try {
+    if (!hasConnection) {
+      throw message;
+    }
+  } catch (error) {
+    throw new Error(error.message);
   }
-
-  const Agent = {};
-  const Metric = {};
-
-  return { Agent, Metric };
-};
+  return {};
+}
+module.exports = { setupService };
