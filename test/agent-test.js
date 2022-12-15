@@ -3,7 +3,7 @@ const test = require("ava");
 const proxyquire = require("proxyquire");
 const sinon = require("sinon");
 let config = { logging: function () {} };
-
+const agentFixture = require("./fixtures/agent");
 /**
  * Declaramos el objeto null, ya que este va a ser el
  * modelo que vamos a estar testeando constantemente,
@@ -17,6 +17,25 @@ let config = { logging: function () {} };
 /**
  * @type {AgentStub}
  */
+let single = { ...agentFixture.single };
+const uuid = "yyy-yyy-yyy";
+const uuidArgs = {
+  where: {
+    uuid,
+  },
+};
+let connectedArgs = { where: { connected: true } };
+let usernameArgs = { where: { username: "platzi", connected: true } };
+let newAgent = {
+  id: 1,
+  uuid: "123-123-123",
+  name: "test",
+  userName: "test",
+  hostname: "test",
+  pid: 0,
+  connected: true,
+};
+const ID = 1;
 let AgentStub = null;
 let db = null;
 let sandbox = null;
@@ -49,6 +68,30 @@ test.beforeEach(async () => {
   AgentStub = {
     hasMany: sandbox.spy(),
   };
+  AgentStub.findById = sandbox.stub();
+  AgentStub.findById
+    .withArgs(ID)
+    .returns(Promise.resolve(agentFixture.findById(ID)));
+
+  AgentStub.findOne = sandbox.stub();
+  AgentStub.findOne
+    .withArgs(uuidArgs)
+    .returns(Promise.resolve(agentFixture.findByUuid(uuid)));
+
+  AgentStub.update = sandbox.stub();
+  AgentStub.update
+    .withArgs(single, uuidArgs)
+    .returns(Promise.resolve(agentFixture.findByUuid(single)));
+
+  AgentStub.create = sandbox.stub();
+  AgentStub.create.withArgs(newAgent).returns(
+    Promise.resolve({
+      toJSON() {
+        return newAgent;
+      },
+    })
+  );
+
   const setupDatabase = proxyquire("../", {
     "./models/agent": () => AgentStub,
     "./models/metric": () => MetricStub,
@@ -80,4 +123,33 @@ test.serial("SetUp", (t) => {
     MetricStub.belongsTo.calledWith(AgentStub),
     "Argument should  be Agent model"
   );
+});
+test.serial("agent findbyId", async (t) => {
+  /**
+   * *En el caso de las bases de datos,
+   * *las pruebas nos permiten especificar
+   * *las funciones que deseamos llamar
+   * *dentro de los servicios.
+   */
+  const agent = await db.Agent.findById(ID);
+  t.deepEqual(agent, agentFixture.findById(ID), "should be the same");
+});
+test.serial("Agent createOrUpdate()- new", async (t) => {
+  let agent = await db.Agent.createOrUpdate(newAgent);
+  t.true(AgentStub.findOne.called, "findOne should be called on model");
+  t.true(AgentStub.findOne.calledOnce, "findOne should be called once");
+  t.true(
+    AgentStub.findOne.calledWith({
+      where: { uuid: newAgent.uuid },
+    }),
+    "findOne should be called with uuid args"
+  );
+  t.true(AgentStub.create.called, "create should be called on model");
+  t.true(AgentStub.create.calledOnce, "create should be called once");
+  t.true(
+    AgentStub.create.calledWith(newAgent),
+    "create should be called with specified args"
+  );
+
+  t.deepEqual(agent, newAgent, "agent should be the same");
 });

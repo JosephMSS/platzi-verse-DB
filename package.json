@@ -8,6 +8,7 @@
     "lint-fix": "standard --fix",
     "setup": "@powershell $env:DEBUG='platziverse:*';node setup.js",
     "test": "ava",
+    "test:watch": "ava --watch",
     "coverage": "nyc --reporter=html --reporter=text npm run test"
   },
   "keywords": [],

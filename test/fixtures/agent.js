@@ -34,18 +34,20 @@ const agents = [
     username: "platzi4",
   },
 ];
-console.log(agents);
+const res = agents.find((agent) => {
+  return agent.id == 1;
+});
 module.exports = {
   single: agent,
   all: agents,
   connected: agents.filter((agent) => agent.connected),
   platzi: agents.filter((agent) => agent.name == "platzi"),
-  byUuid: (uuid) =>
+  findByUuid: (uuid) =>
     agents.find((agent) => {
-      agent.uuid == uuid;
+      return agent.uuid == uuid;
     }),
-  byId: (id) =>
+  findById: (id) =>
     agents.find((agent) => {
-      agent.id == id;
+      return agent.id == id;
     }),
 };

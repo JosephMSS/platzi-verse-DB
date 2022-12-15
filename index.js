@@ -3,6 +3,8 @@ const defaults = require("defaults");
 const setupDatabase = require("./lib/db");
 const setupAgentModel = require("./models/agent");
 const setupMetricModel = require("./models/metric");
+const { AgentSetUp } = require("./lib/agent");
+
 /**
  *
  * @param {} config es inyectado desde el archivo setup.js
@@ -41,7 +43,7 @@ module.exports = async function (config) {
     await sequelize.sync({ force: true });
   }
 
-  const Agent = {};
+  const Agent = new AgentSetUp(AgentModel);
   const Metric = {};
 
   return { Agent, Metric };
